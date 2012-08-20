@@ -99,3 +99,13 @@
  			.(cond 2 1)
 		)
 ))
+
+(def showErrorMessage (\ [ex:WebException]
+	($
+		JsonReaderWriterFactory.(CreateJsonReader ex.Response.(GetResponseStream) XmlDictionaryReaderQuotas.Max)
+			.(use reader XElement.(Load reader))
+			.(Element "error")
+			.Value
+			.(print)
+	).(catch ex.Message.(print))
+))

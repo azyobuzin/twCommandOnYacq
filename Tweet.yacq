@@ -19,6 +19,12 @@
 				)).(let xe
 					(+ "投稿しました：" xe.(Element "text").Value).(print)
 				)
+			).(catch
+				ex:Exception
+					ex.(is WebException).(if
+						(showErrorMessage ex.(to WebException))
+						ex.Message.(print)
+					)
 			)
 		)
 	)
