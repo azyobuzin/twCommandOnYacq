@@ -1,0 +1,25 @@
+(load "Utils")
+
+(authorize).(let token
+	(getCommandLineArgs).(FirstOrDefault).(let text
+		String.(IsNullOrWhiteSpace text).(if
+			;True
+			"ツイート内容を指定してください。".(print)
+			
+			;False
+			Dictionary.[String String].(new).(let data
+				data.(Add "status" text)
+				
+				(parseJson (postWithOAuth
+					"https://api.twitter.com/1/statuses/update.json"
+					data
+					token
+					""
+					""
+				)).(let xe
+					(+ "投稿しました：" xe.(Element "text").Value).(print)
+				)
+			)
+		)
+	)
+)

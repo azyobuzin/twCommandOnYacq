@@ -1,0 +1,3 @@
+[submodule "YacqOAuth"]
+	path = YacqOAuth
+	url = git://github.com/azyobuzin/YacqOAuth.git

@@ -1,0 +1,101 @@
+(assembly "System.Runtime.Serialization")
+(assembly "System.Xml.Linq")
+
+(load "YacqOAuth.YacqOAuth")
+
+(load "cts:System")
+(load "cts:System.Collections.Generic")
+(load "cts:System.Diagnostics")
+(load "cts:System.IO")
+(load "cts:System.Net")
+(load "cts:System.Reflection")
+(load "cts:System.Runtime.Serialization.Json")
+(load "cts:System.Xml")
+(load "cts:System.Xml.Linq")
+
+(def toTokenTuple (\ [source:IEnumerable.[KeyValuePair.[String String]]]
+	source.(ToDictionary (\ [kvp] kvp.Key) (\ [kvp] kvp.Value)).(let dic
+		(tuple dic.["oauth_token"] dic.["oauth_token_secret"])
+	)
+))
+
+(def tokenFile "token.txt")
+
+(def consumerKey "X1wcD4IKiLRPecdgvbH6g")
+(def consumerSecret "sXl9ku9jP4CccHvqChbRvKsv5XSVFW0AMTQdJvqcM")
+
+(def postWithOAuth (\ [uri:String data:IEnumerable.[KeyValuePair.[String String]] token:Tuple.[String String] callback:String verifier:String]
+	(Uri uri).(let reqUri
+		(createAuthorizationHeader
+			"POST"
+			reqUri
+			""
+			consumerKey
+			consumerSecret
+			token.Item1
+			token.Item2
+			HMAC-SHA1
+			callback
+			verifier
+			data
+		).(let header
+			(WebClient).(use wc
+				wc.Headers.(Add HttpRequestHeader.Authorization header)
+				wc.(UploadString reqUri (toWwwFormUrlencoded data)) ;NameValueCollectionは使いたくない
+			)
+		)
+	)
+))
+
+(def authorize (\
+	File.(Exists tokenFile).(cond
+		;True
+		(StreamReader tokenFile).(use sr
+			(tuple sr.(ReadLine) sr.(ReadLine))
+		)
+		
+		;False
+		(toTokenTuple (parseWwwFormUrlencoded (postWithOAuth
+			"https://api.twitter.com/oauth/request_token"
+			Dictionary.[String String].(new)
+			(tuple "" "")
+			"oob"
+			""
+		))).(let requestToken
+			Process.(Start (+ "https://api.twitter.com/oauth/authorize?oauth_token=" requestToken.Item1))
+			
+			(input "PINコード> ").(let pin
+				(toTokenTuple (parseWwwFormUrlencoded (postWithOAuth
+					"https://api.twitter.com/oauth/access_token"
+					Dictionary.[String String].(new)
+					requestToken
+					""
+					pin
+				))).(let accessToken
+					(StreamWriter tokenFile).(use sw
+						sw.(WriteLine accessToken.Item1)
+						sw.(WriteLine accessToken.Item2)
+					)
+					
+					accessToken
+				)
+			)
+		)
+	)
+))
+
+(def parseJson (\ [json:String]
+	JsonReaderWriterFactory.(CreateJsonReader
+		Encoding.UTF8.(GetBytes json)
+		XmlDictionaryReaderQuotas.Max
+	).(use reader
+		XElement.(Load reader)
+	)
+))
+
+(def getCommandLineArgs (\
+	Environment.(GetCommandLineArgs)
+		.(Skip (== Assembly.(GetExecutingAssembly).(GetName).Name "Anonymously Hosted DynamicMethods Assembly")
+ 			.(cond 2 1)
+		)
+))
